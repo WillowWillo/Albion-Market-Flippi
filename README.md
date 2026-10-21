@@ -8,6 +8,8 @@
 
 **Albion-Market-Flippi** is a specialized tool designed to intercept, parse, and process live network traffic from Albion Online (utilizing the Photon protocol framework). Built with Go for maximum concurrency and minimal latency, this service serves as the core backend engine for capturing real-time market orders, tracking price discrepancies, and feeding trade arbitrage pipelines.
 
+Currently not Working on Windows 11
+
 ---
 
 ## 🚀 Key Features
