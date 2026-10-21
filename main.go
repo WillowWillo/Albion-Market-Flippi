@@ -142,7 +142,31 @@ func main() {
 	go sanitizer.LoadTranslationsOnline("PT-BR")
 	go startWebServer()
 
-	device := `\Device\NPF_{A6FBE90B-FC41-4D7C-9E3A-39C2ADFC4923}`
+	// --- SELEÇÃO INTERATIVA DA INTERFACE DE REDE ---
+	devices, err := pcap.FindAllDevs()
+	if err != nil {
+		log.Fatalf("Erro ao listar dispositivos de rede: %v", err)
+	}
+
+	fmt.Println("=== DISPOSITIVOS DE REDE DISPONÍVEIS ===")
+	for i, dev := range devices {
+		fmt.Printf("[%d] %s (%s)\n", i, dev.Name, dev.Description)
+		for _, addr := range dev.Addresses {
+			fmt.Printf("    IP: %s\n", addr.IP)
+		}
+	}
+
+	var choice int
+	fmt.Print("Digite o número da interface de rede que deseja monitorar: ")
+	_, err = fmt.Scan(&choice)
+	if err != nil || choice < 0 || choice >= len(devices) {
+		log.Fatalf("Opção inválida.")
+	}
+
+	device := devices[choice].Name
+	fmt.Printf("Interface selecionada: %s\n", device)
+	// ----------------------------------------------
+
 	snaplen := int32(1600)
 	promisc := false
 	timeout := pcap.BlockForever
@@ -200,19 +224,16 @@ func processPacket(packet gopacket.Packet) {
 
 		location := resolveLocation(raw)
 		
-		// --- CORREÇÃO DA CLASSIFICAÇÃO DE ORDENS ---
 		orderType := "SELL"
 		if strings.ToLower(raw.AuctionType) == "request" {
 			orderType = "BUY"
 		}
 		
-		// Regra à prova de falhas para o Black Market e pacotes bugados do Albion:
 		if raw.SellerName != "" {
 			orderType = "SELL"
 		} else if raw.BuyerName != "" {
 			orderType = "BUY"
 		}
-		// -------------------------------------------
 
 		realPrice := raw.UnitPriceSilver / 10000.0
 		buyerSeller := getBuyerSellerName(raw)
@@ -676,7 +697,7 @@ const htmlTemplate = `<!DOCTYPE html>
                 }
 
                 results.push({
-                    itemId: firstItem.item_id, // CORREÇÃO PRINCIPAL: O ERRO FATAL ESTAVA AQUI
+                    itemId: firstItem.item_id,
                     itemName: itemName,
                     minBuyPrice: minBuyPrice,
                     minBuyAmount: minBuyAmount,
